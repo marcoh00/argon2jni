@@ -8,6 +8,8 @@ package de.wuthoehle.argon2jni;
  */
 
 
+import java.security.SecureRandom;
+
 /**
  * Java part of argon2jni. Define native methods and a Java API.
  * @author Marco Huenseler
@@ -57,6 +59,8 @@ public class Argon2 {
     private SecurityParameters securityParameters;
     private int hashlen;
 
+    SecureRandom random;
+
     /**
      * Construct a class using all default values
      */
@@ -66,6 +70,9 @@ public class Argon2 {
         this.hashlen = DefaultHashlen;
         this.typeid = DefaultTypeIdentifier;
         this.versionid = DefaultVersionIdentifier;
+
+        // Used in case a salt shall be generated
+        this.random = null;
     }
 
     /**
@@ -82,6 +89,9 @@ public class Argon2 {
         // Defaults:
         this.securityParameters = DefaultSecurityParameterTemplate;
         this.hashlen = DefaultHashlen;
+
+        // Used in case a salt shall be generated
+        this.random = null;
     }
 
     /**
@@ -97,6 +107,9 @@ public class Argon2 {
         // Defaults:
         this.typeid = TypeIdentifiers.ARGON2I;
         this.versionid = VersionIdentifiers.VERSION_13;
+
+        // Used in case a salt shall be generated
+        this.random = null;
     }
 
     /**
@@ -129,6 +142,24 @@ public class Argon2 {
                 this.determineValidEncodedLen(salt),
                 this.typeid, this.versionid
         );
+    }
+
+    /**
+     * Call Argon2 and get a result object containing the encoded version of the hash and the generated salt.
+     * If you are unsure what to do and just want to hash a password, choose this method.
+     * Do not forget to store the encoded version of the hash, as it contains the generated salt value,
+     * which is needed to verify given passwords afterwards.
+     * @param pwd Password to hash
+     * @return Object containing the raw hash and an encoded version
+     */
+    public EncodedArgon2Result argon2_hash(byte[] pwd) {
+        if(this.random == null) {
+            this.random = new SecureRandom();
+        }
+        byte[] salt = new byte[16];
+        this.random.nextBytes(salt);
+
+        return this.argon2_hash(pwd, salt);
     }
 
     /**
