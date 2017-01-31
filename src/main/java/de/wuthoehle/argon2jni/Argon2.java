@@ -7,22 +7,41 @@ package de.wuthoehle.argon2jni;
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+
+/**
+ * Java part of argon2jni. Define native methods and a Java API.
+ * @author Marco Huenseler
+ * @version 0.1
+ */
 public class Argon2 {
     static {
         System.loadLibrary("argon2jni");
     }
 
+    /**
+     * Possible algorithm IDs for "typeid" parameter.
+     * @see #argon2jni_hash(int, int, int, byte[], byte[], int, int, int typeid, int)
+     * @see #argon2jni_verify(String, byte[], int typeid)
+     */
     public static final class TypeIdentifiers {
         public static final int ARGON2D = 0;
         public static final int ARGON2I = 1;
         public static final int ARGON2ID = 2;
     }
 
+    /**
+     * Possible algorithm version IDs for "versionid" parameter.
+     * @see #argon2jni_hash(int, int, int, byte[], byte[], int, int, int, int versionid)
+     */
     public static final class VersionIdentifiers {
         public static final int VERSION_10 = 0x10;
         public static final int VERSION_13 = 0x13;
     }
 
+    /**
+     * Useful security parameter combinations (t_cost, m_cost, parallelism)
+     * @see #argon2jni_hash(int t_cost, int m_cost, int parallelism, byte[], byte[], int, int, int, int)
+     */
     public static final class SecurityParameterTemplates {
         public static final SecurityParameters OFFICIAL_DEFAULT = new SecurityParameters(3, 1 << 12, 1);
     }
@@ -38,6 +57,9 @@ public class Argon2 {
     private SecurityParameters securityParameters;
     private int hashlen;
 
+    /**
+     * Construct a class using all default values
+     */
     public Argon2() {
         // Defaults:
         this.securityParameters = DefaultSecurityParameterTemplate;
@@ -46,6 +68,13 @@ public class Argon2 {
         this.versionid = DefaultVersionIdentifier;
     }
 
+    /**
+     * Construct a class with default values for SecurityParameters and hashlen
+     * @param typeid Argon2 algorithm type to use
+     * @param versionid Argon2 version to use
+     * @see TypeIdentifiers
+     * @see VersionIdentifiers
+     */
     public Argon2(int typeid, int versionid) {
         this.typeid = typeid;
         this.versionid = versionid;
@@ -55,6 +84,12 @@ public class Argon2 {
         this.hashlen = DefaultHashlen;
     }
 
+    /**
+     * Construct a class with default values for algorithm type and algorithm version
+     * @param securityParameters SecurityParameters (t_cost, m_cost, parallelism) to use
+     * @param hashlen Desired hash output length in bytes
+     * @see SecurityParameters
+     */
     public Argon2(SecurityParameters securityParameters, int hashlen) {
         this.securityParameters = securityParameters;
         this.hashlen = hashlen;
@@ -64,6 +99,16 @@ public class Argon2 {
         this.versionid = VersionIdentifiers.VERSION_13;
     }
 
+    /**
+     * Construct a class using all custom values
+     * @param securityParameters SecurityParameters (t_cost, m_cost, parallelism) to use
+     * @param hashlen Desired hash output length in bytes
+     * @param typeid Argon2 algorithm type to use
+     * @param versionid Argon2 version to use
+     * @see SecurityParameters
+     * @see TypeIdentifiers
+     * @see VersionIdentifiers
+     */
     public Argon2(SecurityParameters securityParameters, int hashlen, int typeid, int versionid) {
         this.securityParameters = securityParameters;
         this.hashlen = hashlen;
@@ -71,6 +116,12 @@ public class Argon2 {
         this.versionid = versionid;
     }
 
+    /**
+     * Call Argon2 and get a result object containing the raw hash and an encoded version
+     * @param pwd Password to hash
+     * @param salt Salt to use
+     * @return Object containing the raw hash and an encoded version
+     */
     public EncodedArgon2Result argon2_hash(byte[] pwd, byte[] salt) {
         return (EncodedArgon2Result) argon2jni_hash(
                 this.securityParameters.t_cost, this.securityParameters.m_cost, this.securityParameters.parallelism,
@@ -80,6 +131,12 @@ public class Argon2 {
         );
     }
 
+    /**
+     * Call Argon2 and get a result object containing only the raw hash value
+     * @param pwd Password to hash
+     * @param salt Salt to use
+     * @return Object containing the raw hash
+     */
     public Argon2Result argon2_hash_raw(byte[] pwd, byte[] salt) {
         return argon2jni_hash(
                 this.securityParameters.t_cost, this.securityParameters.m_cost, this.securityParameters.parallelism,
@@ -87,24 +144,83 @@ public class Argon2 {
         );
     }
 
+    /**
+     * Call Argon2's verify function to check whether the password specified matches the encoded one
+     * @param encoded Encoded Argon2 hash
+     * @param pwd Password to check
+     * @return true if password is valid, otherwise false
+     */
+    public boolean argon2_verify(String encoded, byte[] pwd) {
+        return argon2jni_verify(encoded, pwd, this.typeid);
+    }
+
+    /**
+     * This is a wrapper around Argon2's native argon2_hash function. Be sure to choose valid values.
+     * <b>It is NOT RECOMMENDED to call this method directly. Please be sure you know what you are doing.</b>
+     * If in doubt, try argon2_hash instead.
+     * @param t_cost Time cost
+     * @param m_cost Memory cost
+     * @param parallelism Threads to use
+     * @param pwd Password to hash
+     * @param salt Salt to use
+     * @param hashlen Desired output hash length in bytes
+     * @param encodedlen Internal size reserved for the encoded string. Try determineValidEncodedLen if in doubt or specify 0 if you do not need an encoded version.
+     * @param typeid Argon2 algorithm type to use. See TypeIdentifiers if in doubt
+     * @param versionid Argon2 algorithm version to use. See VersionIdentifiers if in doubt
+     * @return Argon2Result or EncodedArgon2Result object, depending on the value specified for encodedlen.
+     * @see #argon2_hash(byte[], byte[])
+     * @see TypeIdentifiers
+     * @see VersionIdentifiers
+     * @see #determineValidEncodedLen(SecurityParameters, int, int, byte[])
+     */
     public static native Argon2Result argon2jni_hash(int t_cost, int m_cost, int parallelism,
                                               byte[] pwd, byte[] salt,
                                               int hashlen, int encodedlen,
                                               int typeid, int versionid);
 
+
+
+    /**
+     * This is a wrapper around Argon2's native argon2_verify function. Be sure to choose valid values.
+     * <b>It is NOT RECOMMENDED to call this method directly. Please be sure you know what you are doing.</b>
+     * If in doubt, try argon2_verify instead.
+     * @param encoded Encoded Argon2 hash
+     * @param pwd Password to check
+     * @param typeid Argon2 algorithm to use. See VersionIdentifiers if in doubt
+     * @return true if password is valid, otherwise false
+     * @see #argon2_verify(String, byte[])
+     * @see VersionIdentifiers
+     */
     public static native boolean argon2jni_verify(String encoded, byte[] pwd, int typeid);
 
+    /**
+     * Helper function to determine a value for the encodedlen parameter, which is sufficient to hold the resulting encoded hash
+     * @param salt Salt used to calculate the encoded hash
+     * @return A size in bytes which is sufficient to hold an encoded hash string
+     */
     public int determineValidEncodedLen(byte[] salt) {
+        return determineValidEncodedLen(this.securityParameters, this.hashlen, this.versionid, salt);
+    }
+
+    /**
+     * Helper function to determine a value for the encodedlen parameter, which is sufficient to hold the resulting encoded hash
+     * @param securityParameters SecurityParameters (t_cost, m_cost, parallelism) used
+     * @param hashlen Output hash size in bytes
+     * @param versionid Argon2 version to use
+     * @param salt Salt to use
+     * @return A size in bytes which is sufficient to hold an encoded hash string
+     */
+    public static int determineValidEncodedLen(SecurityParameters securityParameters, int hashlen, int versionid, byte[] salt) {
         // $argon2xx$v=[version]$m=[m_cost],t=[t_cost],p=[parallelism]$[b64:salt]$[b64:hash]
         // 12                   3          3          3               1          1
         // = 23
         // + 2 safety (possible closing '=' in base64 encoding etc.)
         int encodedlen = 25;
 
-        encodedlen += Integer.toString(this.versionid, 10).length();
-        encodedlen += Integer.toString(this.securityParameters.m_cost, 10).length();
-        encodedlen += Integer.toString(this.securityParameters.t_cost, 10).length();
-        encodedlen += Integer.toString(this.securityParameters.parallelism, 10).length();
+        encodedlen += Integer.toString(versionid, 10).length();
+        encodedlen += Integer.toString(securityParameters.m_cost, 10).length();
+        encodedlen += Integer.toString(securityParameters.t_cost, 10).length();
+        encodedlen += Integer.toString(securityParameters.parallelism, 10).length();
 
         /* Salt and hash lengths
          * "Specifically, given an input of n bytes, the output will be {\displaystyle 4\lceil n/3\rceil } 4 \lceil n/3 \rceil bytes long, including padding characters."
@@ -112,7 +228,7 @@ public class Argon2 {
          */
 
         encodedlen += 4 * Math.ceil(salt.length / 3.0f);
-        encodedlen += 4 * Math.ceil(this.hashlen / 3.0f);
+        encodedlen += 4 * Math.ceil(hashlen / 3.0f);
         return encodedlen;
     }
 
