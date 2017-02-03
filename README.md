@@ -1,6 +1,6 @@
 # argon2jni
 
-argon2jni is a JNI (Java Native Interface) wrapper over the [official Argon2 C library](https://github.com/P-H-C/phc-winner-argon2).
+argon2jni is a JNI (Java Native Interface) wrapper using the [official Argon2 C library](https://github.com/P-H-C/phc-winner-argon2).
 
 ## What is it?
 
