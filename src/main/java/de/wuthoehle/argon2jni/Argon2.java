@@ -124,6 +124,7 @@ public class Argon2 {
 
     /**
      * Call Argon2 and get a result object containing only the raw hash value
+     * <br><b>WARNING!</b> Be sure to use a constant-time comparison function when verifying the hash!
      * @param pwd Password to hash
      * @param salt Salt to use
      * @return Object containing the raw hash
