@@ -9,10 +9,8 @@ package de.wuthoehle.argon2jni;
 
 import android.support.test.runner.AndroidJUnit4;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,6 +18,7 @@ import java.util.Collection;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertSame;
 import static junit.framework.Assert.assertTrue;
 
 @RunWith(AndroidJUnit4.class)
@@ -40,16 +39,16 @@ public class APITest {
                 Argon2.SecurityParameterTemplates.OFFICIAL_DEFAULT,
                 Argon2.TypeIdentifiers.ARGON2D,
                 Argon2.VersionIdentifiers.VERSION_10,
-                new byte[] {0},
-                "ABCDEF"
+                new byte[] {38, 101, 9, 83, 57, -93, -127, -126, 42, 118, 78, 12, 88, -27, -67, -88},
+                "$argon2d$v=16$m=4096,t=3,p=1$gAABAgQIECE$JmUJUzmjgYIqdk4MWOW9qA"
         });
         // versionid: VERSION_13
         elements.add(new Object[] {
                 Argon2.SecurityParameterTemplates.OFFICIAL_DEFAULT,
                 Argon2.TypeIdentifiers.ARGON2D,
                 Argon2.VersionIdentifiers.VERSION_13,
-                new byte[] {0},
-                "ABCDEF"
+                new byte[] {94, -127, -83, 1, -37, 105, -22, 55, -39, -115, 126, 9, -31, -63, -43, 24},
+                "$argon2d$v=19$m=4096,t=3,p=1$gAABAgQIECE$XoGtAdtp6jfZjX4J4cHVGA"
         });
         // ---------- typeid: ARGON2I
         // versionid: VERSION_10
@@ -57,16 +56,16 @@ public class APITest {
                 Argon2.SecurityParameterTemplates.OFFICIAL_DEFAULT,
                 Argon2.TypeIdentifiers.ARGON2I,
                 Argon2.VersionIdentifiers.VERSION_10,
-                new byte[] {0},
-                "ABCDEF"
+                new byte[] {59, -55, -15, 35, -12, 1, -74, -78, 11, -92, -64, -73, -18, 117, -53, -100},
+                "$argon2i$v=16$m=4096,t=3,p=1$gAABAgQIECE$O8nxI/QBtrILpMC37nXLnA"
         });
         // versionid: VERSION_13
         elements.add(new Object[] {
                 Argon2.SecurityParameterTemplates.OFFICIAL_DEFAULT,
                 Argon2.TypeIdentifiers.ARGON2I,
                 Argon2.VersionIdentifiers.VERSION_13,
-                new byte[] {0},
-                "ABCDEF"
+                new byte[] {116, 7, 14, 43, -114, -4, 57, -21, 42, -125, 102, -99, -105, 15, 78, 46},
+                "$argon2i$v=19$m=4096,t=3,p=1$gAABAgQIECE$dAcOK478Oesqg2adlw9OLg"
         });
         // ---------- typeid: ARGON2ID
         // versionid: VERSION_10
@@ -74,16 +73,16 @@ public class APITest {
                 Argon2.SecurityParameterTemplates.OFFICIAL_DEFAULT,
                 Argon2.TypeIdentifiers.ARGON2ID,
                 Argon2.VersionIdentifiers.VERSION_10,
-                new byte[] {0},
-                "ABCDEF"
+                new byte[] {110, -8, -28, -68, -55, 127, -113, 47, -28, -85, 103, 67, -102, -58, -47, 17},
+                "$argon2id$v=16$m=4096,t=3,p=1$gAABAgQIECE$bvjkvMl/jy/kq2dDmsbREQ"
         });
         // versionid: VERSION_13
         elements.add(new Object[] {
                 Argon2.SecurityParameterTemplates.OFFICIAL_DEFAULT,
                 Argon2.TypeIdentifiers.ARGON2ID,
                 Argon2.VersionIdentifiers.VERSION_13,
-                new byte[] {0},
-                "ABCDEF"
+                new byte[] {-14, 102, -113, -73, -59, -33, 112, 72, 66, 116, -47, -18, 26, 74, -56, -44},
+                "$argon2id$v=19$m=4096,t=3,p=1$gAABAgQIECE$8maPt8XfcEhCdNHuGkrI1A"
         });
 
         return elements;
@@ -132,8 +131,8 @@ public class APITest {
 
             EncodedArgon2Result result = obj.argon2_hash(common_key);
             assertTrue(Argon2.isRngInitialized());
-            assertTrue(result.getResult().length == Argon2.DefaultHashlen);
-            assertTrue(result.getEncoded().length() > 16);
+            assertSame(Argon2.DefaultHashlen, result.getResult().length);
+            assertTrue(result.getEncoded().length() > 70);
         }
     }
 
@@ -147,7 +146,7 @@ public class APITest {
 
             Argon2Result result = obj.argon2_hash_raw(common_key);
             assertTrue(Argon2.isRngInitialized());
-            assertTrue(result.getResult().length == Argon2.DefaultHashlen);
+            assertSame(Argon2.DefaultHashlen, result.getResult().length);
         }
     }
 
@@ -155,8 +154,8 @@ public class APITest {
     public void argon2_quick_hash_works() {
         EncodedArgon2Result result = Argon2.argon2_quick_hash(common_key);
         assertTrue(Argon2.isRngInitialized());
-        assertTrue(result.getResult().length == Argon2.DefaultHashlen);
-        assertTrue(result.getEncoded().length() > 16);
+        assertSame(Argon2.DefaultHashlen, result.getResult().length);
+        assertTrue(result.getEncoded().length() > 70);
     }
 
     @Test
@@ -167,13 +166,29 @@ public class APITest {
                     (Integer) element[1],
                     (Integer) element[2]);
             assertTrue(obj.argon2_verify((String) element[4], common_key));
-            assertFalse(obj.argon2_verify("ABCDEFGHIJKLMNOPQRSTUVWXYZ", common_key));
+
+            StringBuilder decodableString = new StringBuilder();
+            decodableString.append("$argon2");
+            switch((Integer) element[1]) {
+                case Argon2.TypeIdentifiers.ARGON2D:
+                    decodableString.append("d");
+                    break;
+                case Argon2.TypeIdentifiers.ARGON2I:
+                    decodableString.append("i");
+                    break;
+                case Argon2.TypeIdentifiers.ARGON2ID:
+                    decodableString.append("id");
+                    break;
+            }
+            decodableString.append("$v=19$m=4096,t=3,p=1$AAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAA");
+
+            assertFalse(obj.argon2_verify(decodableString.toString(), common_key));
         }
     }
 
     @Test
     public void argon2_quick_verify_works() {
-        assertTrue(Argon2.argon2_quick_verify("ABCD", common_key));
-        assertFalse(Argon2.argon2_quick_verify("ABCDEFGHIJKLMNOPQRSTUVWXYZ", common_key));
+        assertTrue(Argon2.argon2_quick_verify("$argon2i$v=19$m=4096,t=3,p=1$gAABAgQIECE$dAcOK478Oesqg2adlw9OLg", common_key));
+        assertFalse(Argon2.argon2_quick_verify("$argon2i$v=19$m=4096,t=3,p=1$AAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAA", common_key));
     }
 }
