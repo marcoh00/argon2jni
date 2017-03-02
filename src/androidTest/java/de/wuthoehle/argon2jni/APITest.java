@@ -115,6 +115,9 @@ public class APITest {
                     (Integer) element[2]);
 
             Argon2Result result = obj.argon2_hash_raw(common_key, common_salt);
+
+            // BAD PRACTICE: NEVER USE THIS IN PRODUCTION!
+            // You should compare the result using a constant-time comparsion function
             assertTrue(Arrays.equals((byte[]) element[3], result.getResult()));
         }
     }
