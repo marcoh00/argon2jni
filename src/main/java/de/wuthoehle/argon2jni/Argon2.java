@@ -190,6 +190,14 @@ public class Argon2 {
         return argon2jni_verify(encoded, pwd, Argon2.DefaultTypeIdentifier);
     }
 
+    /**
+     * Used to make sure the RNG was initialized. Used for test cases.
+     * @return Whether Argon2.random was initialized (not null)
+     */
+    public static boolean isRngInitialized() {
+        return Argon2.random != null;
+    }
+
 
     /**
      * This is a wrapper around Argon2's native argon2_hash function. Be sure to choose valid values.
